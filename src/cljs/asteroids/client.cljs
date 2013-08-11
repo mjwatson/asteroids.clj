@@ -59,13 +59,13 @@
     (.fillRect 0 0 (:max x) (:max y))))
 
 (defn draw-ball
-    ([ {:keys [context opacity x y d foreground]}]
-      (doto context
-        (setColor foreground opacity)
-        .beginPath 
-        (.arc  (:coord x) (:coord y) d 0 (* 2 Math/PI) true)
-        .closePath 
-        .fill )))
+  ([ {:keys [context opacity x y d foreground]}]
+     (doto context
+       (setColor foreground opacity)
+       .beginPath
+       (.arc  (:coord x) (:coord y) d 0 (* 2 Math/PI) true)
+       .closePath
+       .fill )))
 
 (defn calculate-opacity [age]
   (/ 1 (inc (* history-opacity age))))
@@ -79,7 +79,7 @@
 (defn draw! [history]
   (let [state (last history)]
     (doto state
-      clear 
+      clear
       (draw-history history)
       draw-ball)))
 
@@ -137,6 +137,32 @@
 (defn init-state []
   (reset! stream (history-stream)))
 
+;; Useful function for playing at the repl
+
+(defn shove [x y]
+  (swap! state
+         (fn [s]
+           (-> s
+               (update-in [:x :velocity] #(+ % x))
+               (update-in [:y :velocity] #(+ % y))))))
+
+;; Allow arrow keys to shove the ball
+
+(def key-mappings
+  {37 [-10 0]
+   38 [0 -10]
+   39 [10  0]
+   40 [0  10]})
+
+(defn on-keydown [e]
+  (when-let [[x y] (key-mappings (.-keyCode e))]
+    (.preventDefault e)
+    (shove x y)
+    false))
+
+(defn register-for-key-events []
+  (.addEventListener js/window "keydown" on-keydown))
+
 ;; Top level control
 ;; Includes functions to start/stop/restart from the repl
 
@@ -164,14 +190,5 @@
   (start))
 
 (defn init []
+  (register-for-key-events)
   (restart))
-
-;; Useful function for playing at the repl
-
-(defn shove [x y]
-  (swap! state
-         (fn [s]
-           (-> s
-               (update-in [:x :velocity] #(+ % x))
-               (update-in [:y :velocity] #(+ % y))))))
-

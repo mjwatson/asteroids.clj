@@ -5,6 +5,11 @@ body {
   background-color: #8eba8e;
 }
 
+canvas {
+  margin: 3em;
+  padding: 1em;
+}
+
 div {
   background: green;
   margin: 3em;
