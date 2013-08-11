@@ -8,4 +8,3 @@ pom.xml
 .lein-deps-sum
 .lein-repl-history
 .repl
-resources/public/js/asteroids.js
