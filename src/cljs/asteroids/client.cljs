@@ -6,9 +6,11 @@
 
 ;; Global setting
 
-(def gravity 0.1)
+(def GRAVITY 0.1)
+(def gravity (atom GRAVITY))
 
-(def elasticity 0.80)
+(def ELASTICITY 0.8)
+(def elasticity (atom ELASTICITY))
 
 ;; The canvas
 
@@ -89,7 +91,7 @@
   (let [new-coord (+ coord velocity)]
     (if (and (< 0 new-coord) (< new-coord max))
       (assoc dimension :coord    new-coord)
-      (assoc dimension :velocity (* -1 elasticity velocity)))))
+      (assoc dimension :velocity (* -1 @elasticity velocity)))))
 
 (defn move-ball [state]
   (-> state
@@ -97,7 +99,7 @@
       (update-in [:y] bounce)))
 
 (defn apply-gravity [state]
-  (update-in state [:y :velocity] #(+ % gravity)))
+  (update-in state [:y :velocity] #(+ % @gravity)))
 
 (defn age [state]
   (update-in state [:generation] inc))
@@ -173,13 +175,12 @@
   (draw! (first @stream)))
 
 (defn run []
+  (.mozRequestAnimationFrame js/window run)
   (when @running
-    (.mozRequestAnimationFrame js/window run)
     (tick)))
 
-(defn start []
-  (reset! running true)
-  (run))
+(defn start [& _]
+  (reset! running true))
 
 (defn stop []
   (reset! running false))
@@ -189,6 +190,41 @@
   (init-state)
   (start))
 
+;; Allow control of application from ui
+
+(defn get-mouse-event [id handler]
+  (.addEventListener (.getElementById js/document id) "mousedown" handler))
+
+(defn set-text [id text]
+  (set! (.-innerHTML (.getElementById js/document id)) text))
+
+(defn mouse-update-atom [name id a update]
+  (let [button-id (str name "_" id)
+        label-id  (str name "_" "reset")]
+    (get-mouse-event button-id
+                     (fn []
+                       (swap! a update)
+                       (set-text label-id (str name " " (.toFixed @a 2)))))))
+
+(defn mouse-change-atom [name id a v]
+  (mouse-update-atom name id a (partial + v)))
+
+(defn mouse-reset-atom [name id a v]
+  (mouse-update-atom name id a (fn [_] v)))
+
+(defn register-for-mouse-events []
+  (get-mouse-event   "stop"       stop)
+  (get-mouse-event   "start"      start)
+  (get-mouse-event   "restart"    restart)
+  (mouse-change-atom "gravity"    "plus"  gravity    0.05)
+  (mouse-reset-atom  "gravity"    "reset" gravity    GRAVITY)
+  (mouse-change-atom "gravity"    "minus" gravity    -0.05)
+  (mouse-change-atom "elasticity" "plus"  elasticity 0.05)
+  (mouse-reset-atom  "elasticity" "reset" elasticity ELASTICITY)
+  (mouse-change-atom "elasticity" "minus" elasticity -0.05))
+
 (defn init []
   (register-for-key-events)
-  (restart))
+  (register-for-mouse-events)
+  (restart)
+  (run))

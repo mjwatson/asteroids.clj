@@ -2,18 +2,44 @@ body {
   width: 900px;
   height: 1500px;
   margin: 0 auto;
+  margin-top: 2em;
   background-color: #8eba8e;
 }
 
-canvas {
-  margin: 3em;
+canvas { 
+  margin: 1em;
+  margin-top: 0.2em;
   padding: 1em;
+  background-color: #8eba8e;
 }
 
-div {
-  background: green;
-  margin: 3em;
-  padding: 1em;
-  border: 1px solid gray;
-  background-color: #baf0ba;
+div#control-group {
+  width: 780px;
+  height: 45px;
+  margin-top: 1.5px;
+  margin-left: 2em;
+  margin-bottom: 1px;
+  padding: 0.5em;
+  background-color: #8eab8e;
+  border-color: #83ab8e;
+ }
+
+div.controls {
+  height: 30px;
+  position: absolute;
+  top: 50%;
+  margin-top: -30px;
+  margin-left: 5px;
 }
+
+div.button {
+  height: 39px;;
+  width: 250px;
+  margin: 5px;
+  padding: 0em;
+  background-color: #8eba8e;
+  float: left;
+  font-family: "Goudy Old Style", Garamond, "Big Caslon", "Times New Roman", serif;
+  font-size: 24px;
+  text-align: center;
+ }

@@ -4,7 +4,31 @@
         <link   rel="stylesheet" href="css/page.css" />
     </head>
     <body>
-        <canvas id="canvas" width="800" height="800"></canvas>
+        <div id="control-group" width="800">
+         <div id="control">
+          <div id="start"   class="button">start</div>
+          <div id="stop"    class="button">stop</div>
+          <div id="restart" class="button">restart</div>
+         </div>
+        </div>
+        
+        <div id="control-group" width="800">
+         <div id="control">
+          <div id="gravity_minus" class="button">-</div>
+          <div id="gravity_reset" class="button">gravity</div>
+          <div id="gravity_plus"  class="button">+</div>
+         </div>
+        </div>
+
+        <div id="control-group" width="800">
+         <div id="control">
+          <div id="elasticity_minus" class="button">-</div>
+          <div id="elasticity_reset" class="button">elasticity</div>
+          <div id="elasticity_plus"  class="button">+</div>
+         </div>
+        </div>
+         
+        <canvas id="canvas" width="800" height="700"></canvas>
         <script src="js/asteroids.js" type="text/javascript"></script>
         <script>asteroids.client.init();</script>
     </body>
