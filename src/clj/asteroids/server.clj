@@ -9,15 +9,24 @@
             [clojure.java.io :as io])
   (:gen-class))
 
+;; Utility method to start the brepl
+
+(defn start-repl []
+  (let [repl-env (reset! cemerick.austin.repls/browser-repl-env
+                         (cemerick.austin/repl-env))]
+    (cemerick.austin.repls/cljs-repl repl-env)))
+
 ;; Horrible hack needed to make the page connect to the austin brepl.
 ;; Basically appends the necessary javascript to the end of the main page
+;; Currently reloads on each request to aid development work-flow
 
-(enlive/deftemplate page
-  "public/index.html"
-  []
-  [:body] (enlive/append
-            (enlive/html 
-              [:script (browser-connected-repl-js)])))
+(defn page []
+  ((enlive/template 
+     "public/index.html"
+     []
+     [:body] (enlive/append 
+               (enlive/html 
+                 [:script (browser-connected-repl-js)])))))
 
 ;; The routes - pretty simple for now.
 
