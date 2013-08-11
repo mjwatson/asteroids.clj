@@ -11,6 +11,7 @@
 
 ;; Utility method to start the brepl
 
+
 (defn start-repl []
   (let [repl-env (reset! cemerick.austin.repls/browser-repl-env
                          (cemerick.austin/repl-env))]
@@ -48,6 +49,6 @@
 (defn run []
   (start {:port 8080 :join? false}))
 
-(defn -main [& args]
-  (start {:port 8080 :join? true}))
+(defn -main [port & args]
+  (start {:port (Integer. port) :join? true}))
 

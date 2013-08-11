@@ -14,6 +14,10 @@
             [com.cemerick/austin "0.1.0"]
             [lein-ring "0.8.3"]]
 
+  :uberjar-name "clj-bouncingball.jar"
+
+  :min-lein-version "2.0.0"
+
   ;; :hooks [leiningen.cljsbuild]
 
   :source-paths ["src/clj", "src/cljs"]
