@@ -174,8 +174,13 @@
   (swap! stream rest)
   (draw! (first @stream)))
 
+(def requestAnimation (or (.-requestAnimationFrom js/window)
+                          (.-webkitRequestAnimationFrame js/window)
+                          (.-mozRequestAnimationFrom js/window)
+                          (fn [c] (.setTimeout js/window c (/ 1000 60)))))
+
 (defn run []
-  (.mozRequestAnimationFrame js/window run)
+  (requestAnimation run)
   (when @running
     (tick)))
 
