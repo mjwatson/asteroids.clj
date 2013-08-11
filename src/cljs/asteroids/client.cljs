@@ -24,24 +24,30 @@
 (defn height [canvas]
   (.-height canvas))
 
-;; The state of the application
+;; The current state of the application
+;; Stored in an atom for access via the repl
 
-(def state (atom {}))
-
-(defn init-state []
+(defn initial-state []
   (let [canvas (canvas)]
-    (reset! state { :generation 0
-                    :opacity    1
-                    :context    (context canvas)
-                    :x          { :coord 0 :velocity 10 :max (width  canvas)}
-                    :y          { :coord 0 :velocity 0  :max (height canvas)}
-                    :d          40
-                    :foreground "red"
-                    :background "white"
-                    :history    (sorted-map) })))
+    {:generation 0
+     :opacity    1
+     :context    (context canvas)
+     :x          { :coord 0 :velocity 10 :max (width  canvas)}
+     :y          { :coord 0 :velocity 0  :max (height canvas)}
+     :d          40
+     :foreground "red"
+     :background "white" }))
+
+
+;; History parameters controlling how many previous posistions are displayed
+
+(def history-size    10)
+(def history-freq    10)
+(def history-queue   (* history-size history-freq))
+(def history-opacity 0.5)
 
 ;; Draw the background and the ball on the canvas
-
+;; Old states are drawn with increasing transparency
 
 (defn setColor [context color opacity]
   (set! (.-fillStyle context) color)
@@ -52,7 +58,7 @@
     (setColor  background 1)
     (.fillRect 0 0 (:max x) (:max y))))
 
-(defn drawBall
+(defn draw-ball
     ([ {:keys [context opacity x y d foreground]}]
       (doto context
         (setColor foreground opacity)
@@ -61,24 +67,21 @@
         .closePath 
         .fill )))
 
-(def history-size    20)
-(def history-freq    10)
-(def history-opacity 0.5)
-
 (defn calculate-opacity [age]
   (/ 1 (inc (* history-opacity age))))
 
-(defn drawHistory [state]
+(defn draw-history [state history]
   (when history-size
-    (doseq [[generation old-state] (:history state)]
-      (let [opacity (calculate-opacity (state :generation) generation)]
-        (drawBall (assoc old-state :opacity opacity))))))
+    (doseq [old-state (take-nth history-freq  history) :when (not (nil? old-state))]
+      (let [opacity (calculate-opacity (- (state :generation) (old-state :generation)))]
+        (draw-ball (assoc old-state :opacity opacity))))))
 
-(defn draw! [state]
-  (doto state 
-    clear
-    drawHistory
-    drawBall))
+(defn draw! [history]
+  (let [state (last history)]
+    (doto state
+      clear 
+      (draw-history history)
+      draw-ball)))
 
 ;; Move the ball
 
@@ -96,34 +99,8 @@
 (defn apply-gravity [state]
   (update-in state [:y :velocity] #(+ % gravity)))
 
-
-;; Store some history
-;; Uses a sorted map to only store the last $history-size elements
-;; Only store the history of the top-level state
-
-(defn store-history? [state]
-  (and history-size
-       (zero? (mod (:generation state) history-freq))))
-
-(defn store-history [history state]
-  (conj history [ (:generation state) (dissoc state :history)]))
-
-(defn trim-history [history]
-  (if (< history-size (count history))
-    (dissoc  history (first (keys history)))
-    history))
-
-(defn update-history [history state]
-  (if (store-history? state)
-    (-> history (store-history state) trim-history)
-    history))
-
 (defn age [state]
-  (-> state
-      (update-in [:history]    #(update-history % state))
-      (update-in [:generation] inc)))
-
-;; Update the state
+  (update-in state [:generation] inc))
 
 (defn update-state [state]
   (-> state
@@ -131,14 +108,43 @@
       apply-gravity
       move-ball))
 
+;; Create an (almost) purely functional history as a sequence of the
+;; last $history-size elements.
+;;
+;; Its not quite functional, as rather than just using iterate,
+;; we store the last value of the state is stored in an atom
+;; This allows it to be modified and viewed easily from the repl.
+;; If this wasn't wanted then next-state could be just update-state.
+
+(def state  (atom nil))
+(def stream (atom nil))
+
+(defn store-initial-state []
+  (reset! state (initial-state)))
+
+(defn next-state [& args]
+  (swap! state update-state))
+
+(defn empty-history []
+  (repeat history-queue nil))
+
+(defn state-stream []
+  (iterate next-state (store-initial-state)))
+
+(defn history-stream []
+  (partition history-queue 1 (concat (empty-history) (state-stream))))
+
+(defn init-state []
+  (reset! stream (history-stream)))
+
 ;; Top level control
 ;; Includes functions to start/stop/restart from the repl
 
 (def running (atom false))
 
 (defn tick []
-  (swap! state update-state)
-  (draw! @state))
+  (swap! stream rest)
+  (draw! (first @stream)))
 
 (defn run []
   (when @running
@@ -149,13 +155,13 @@
   (reset! running true)
   (run))
 
+(defn stop []
+  (reset! running false))
+
 (defn restart []
   (stop)
   (init-state)
   (start))
-
-(defn stop []
-  (reset! running false))
 
 (defn init []
   (restart))
@@ -164,8 +170,8 @@
 
 (defn shove [x y]
   (swap! state
-    (fn [s]
-      (-> s
-          (update-in [:x :velocity] #(+ % x))
-          (update-in [:y :velocity] #(+ % y))))))
+         (fn [s]
+           (-> s
+               (update-in [:x :velocity] #(+ % x))
+               (update-in [:y :velocity] #(+ % y))))))
 
