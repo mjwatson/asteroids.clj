@@ -46,7 +46,7 @@
 (def history-size    10)
 (def history-freq    10)
 (def history-queue   (* history-size history-freq))
-(def history-opacity 0.5)
+(def history-opacity 0.25)
 
 ;; Draw the background and the ball on the canvas
 ;; Old states are drawn with increasing transparency
