@@ -27,7 +27,7 @@
       :main {
         :source-paths ["src/cljs"]
         :compiler {:output-to "resources/public/js/asteroids.js"
-                   :optimizations :simple
+                   :optimizations :advanced
                    :pretty-print true}
         :jar true}}}
 

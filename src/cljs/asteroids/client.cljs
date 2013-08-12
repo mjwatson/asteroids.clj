@@ -228,7 +228,9 @@
   (mouse-reset-atom  "elasticity" "reset" elasticity ELASTICITY)
   (mouse-change-atom "elasticity" "minus" elasticity -0.05))
 
-(defn init []
+;; Initialise the whole she-bang.
+
+(defn ^:export init []
   (register-for-key-events)
   (register-for-mouse-events)
   (restart)
