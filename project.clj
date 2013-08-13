@@ -28,7 +28,7 @@
         :source-paths ["src/cljs"]
         :compiler {:output-to "resources/public/js/asteroids.js"
                    :optimizations :advanced
-                   :pretty-print true}
+                   :pretty-print false }
         :jar true}}}
 
      :ring {:handler asteroids.server/handler }
