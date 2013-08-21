@@ -14,31 +14,27 @@
 
 ;; The canvas
 
-(defn canvas []
-  (-> js/document (.getElementById "canvas")))
+(def canvas (-> js/document (.getElementById "canvas")))
 
-(defn context [canvas]
-  (.getContext canvas "2d"))
+(def context (.getContext canvas "2d"))
 
-(defn width [canvas]
-  (.-width canvas))
+(def width (.-width canvas))
 
-(defn height [canvas]
-  (.-height canvas))
+(def height (.-height canvas))
+
+(def background "white")
 
 ;; The current state of the application
 ;; Stored in an atom for access via the repl
 
 (defn initial-state []
-  (let [canvas (canvas)]
-    {:generation 0
-     :opacity    1
-     :context    (context canvas)
-     :x          { :coord 0 :velocity 10 :max (width  canvas)}
-     :y          { :coord 0 :velocity 0  :max (height canvas)}
-     :d          40
-     :foreground "red"
-     :background "white" }))
+ { :generation 0
+   :opacity    1
+   :context    context 
+   :x          { :coord 0 :velocity 10 :max width  }
+   :y          { :coord 0 :velocity 0  :max height }
+   :d          40
+   :foreground "red" })
 
 
 ;; History parameters controlling how many previous posistions are displayed
@@ -46,7 +42,7 @@
 (def history-size    10)
 (def history-freq    10)
 (def history-queue   (* history-size history-freq))
-(def history-opacity 0.25)
+(def history-opacity 0.05)
 
 ;; Draw the background and the ball on the canvas
 ;; Old states are drawn with increasing transparency
@@ -55,10 +51,10 @@
   (set! (.-fillStyle context) color)
   (set! (.-globalAlpha context) opacity))
 
-(defn clear [{:keys [context x y background]}]
+(defn clear []
   (doto context
-    (setColor  background 1)
-    (.fillRect 0 0 (:max x) (:max y))))
+    (setColor background 1)
+    (.fillRect  0 0 width height)))
 
 (defn draw-ball
   ([ {:keys [context opacity x y d foreground]}]
@@ -74,22 +70,22 @@
 
 (defn draw-history [state history]
   (when history-size
-    (doseq [old-state (take-nth history-freq  history) :when (not (nil? old-state))]
+    (doseq [old-state (take-nth history-freq  history) :when old-state]
       (let [opacity (calculate-opacity (- (state :generation) (old-state :generation)))]
         (draw-ball (assoc old-state :opacity opacity))))))
 
-(defn draw! [history]
-  (let [state (last history)]
-    (doto state
-      clear
-      (draw-history history)
-      draw-ball)))
+(defn draw! [ball-history]
+  (clear)
+  (let [current-state (last ball-history)]
+    (doto current-state
+      (draw-history ball-history)
+      (draw-ball))))
 
 ;; Move the ball
 
 (defn bounce [ {:keys [coord velocity max] :as dimension } ]
   (let [new-coord (+ coord velocity)]
-    (if (and (< 0 new-coord) (< new-coord max))
+    (if (and (< 0 new-coord max))
       (assoc dimension :coord    new-coord)
       (assoc dimension :velocity (* -1 @elasticity velocity)))))
 
@@ -127,11 +123,11 @@
 (defn next-state [& args]
   (swap! state update-state))
 
-(defn empty-history []
-  (repeat history-queue nil))
-
 (defn state-stream []
   (iterate next-state (store-initial-state)))
+
+(defn empty-history []
+  (repeat history-queue nil))
 
 (defn history-stream []
   (partition history-queue 1 (concat (empty-history) (state-stream))))
@@ -149,7 +145,6 @@
                (update-in [:y :velocity] #(+ % y))))))
 
 ;; Allow arrow keys to shove the ball
-
 (def key-mappings
   {37 [-10 0]
    38 [0 -10]
