@@ -24,17 +24,27 @@
 
 (def background "white")
 
+(def default-foreground "red")
+
+(def active-colour (atom default-foreground))
+
 ;; The current state of the application
 ;; Stored in an atom for access via the repl
 
-(defn initial-state []
- { :generation 0
-   :opacity    1
-   :context    context 
+(defn make-ball [colour]
+ { :context    context 
    :x          { :coord 0 :velocity 10 :max width  }
    :y          { :coord 0 :velocity 0  :max height }
    :d          40
-   :foreground "red" })
+   :foreground colour })
+
+(defn make-state [colour]
+  {:generation 0
+   :opacity    1
+   :balls      { colour (make-ball colour) } })
+
+(defn initial-state []
+  (make-state default-foreground))
 
 
 ;; History parameters controlling how many previous posistions are displayed
@@ -57,7 +67,7 @@
     (.fillRect  0 0 width height)))
 
 (defn draw-ball
-  ([ {:keys [context opacity x y d foreground]}]
+  ([ opacity {:keys [context x y d foreground]}]
      (doto context
        (setColor foreground opacity)
        .beginPath
@@ -65,21 +75,25 @@
        .closePath
        .fill )))
 
+(defn draw-balls [state]
+  (doseq [ball (-> state :balls vals)]
+    (draw-ball (:opacity state) ball)))
+
 (defn calculate-opacity [age]
   (/ 1 (inc (* history-opacity age))))
 
 (defn draw-history [state history]
   (when history-size
-    (doseq [old-state (take-nth history-freq  history) :when old-state]
+    (doseq [old-state (take-nth history-freq history) :when old-state]
       (let [opacity (calculate-opacity (- (state :generation) (old-state :generation)))]
-        (draw-ball (assoc old-state :opacity opacity))))))
+        (draw-balls (assoc old-state :opacity opacity))))))
 
 (defn draw! [ball-history]
   (clear)
   (let [current-state (last ball-history)]
     (doto current-state
-      (draw-history ball-history)
-      (draw-ball))))
+      (draw-history  ball-history)
+      (draw-balls))))
 
 ;; Move the ball
 
@@ -100,11 +114,21 @@
 (defn age [state]
   (update-in state [:generation] inc))
 
+(defn update-ball [ball]
+  (-> ball
+      apply-gravity
+      move-ball))
+
+(defn update-values [d f]
+  (into {} (for [[k v] d] [k (f v)])))
+
+(defn update-balls [state]
+  (update-in state [:balls] update-values update-ball))
+
 (defn update-state [state]
   (-> state
       age
-      apply-gravity
-      move-ball))
+      update-balls))
 
 ;; Create an (almost) purely functional history as a sequence of the
 ;; last $history-size elements.
@@ -137,12 +161,26 @@
 
 ;; Useful function for playing at the repl
 
-(defn shove [x y]
-  (swap! state
-         (fn [s]
-           (-> s
-               (update-in [:x :velocity] #(+ % x))
-               (update-in [:y :velocity] #(+ % y))))))
+(defn shove
+  ([x y]
+     (shove x y default-foreground))
+  ([x y colour]
+     (when (-> @state :balls (contains? colour))
+       (swap! state
+              (fn [s]
+                (-> s
+                    (update-in [:balls colour :x :velocity] #(+ % x))
+                    (update-in [:balls colour :y :velocity] #(+ % y))))))))
+
+(defn shove-all! [x y]
+  (doseq [ c (-> @state :balls keys)]
+    (shove x y c)))
+
+(defn fire! [colour]
+  (swap! state update-in [:balls] assoc colour (make-ball colour)))
+
+(defn blat! [colour]
+  (swap! state update-in [:balls] dissoc colour))
 
 ;; Allow arrow keys to shove the ball
 (def key-mappings
@@ -154,7 +192,7 @@
 (defn on-keydown [e]
   (when-let [[x y] (key-mappings (.-keyCode e))]
     (.preventDefault e)
-    (shove x y)
+    (shove x y @active-colour)
     false))
 
 (defn register-for-key-events []
@@ -192,6 +230,8 @@
 
 ;; Allow control of application from ui
 
+
+
 (defn get-mouse-event [id handler]
   (.addEventListener (.getElementById js/document id) "mousedown" handler))
 
@@ -216,17 +256,37 @@
   (get-mouse-event   "stop"       stop)
   (get-mouse-event   "start"      start)
   (get-mouse-event   "restart"    restart)
-  (mouse-change-atom "gravity"    "plus"  gravity    0.05)
+  (mouse-change-atom "gravity"    "plus"  gravity    0.02)
   (mouse-reset-atom  "gravity"    "reset" gravity    GRAVITY)
-  (mouse-change-atom "gravity"    "minus" gravity    -0.05)
+  (mouse-change-atom "gravity"    "minus" gravity    -0.02)
   (mouse-change-atom "elasticity" "plus"  elasticity 0.05)
   (mouse-reset-atom  "elasticity" "reset" elasticity ELASTICITY)
   (mouse-change-atom "elasticity" "minus" elasticity -0.05))
+
+
+
+(defn get-colour-elements []
+  (let [elements (-> js/document (.querySelectorAll ".colourb"))]
+    (for [n (range (.-length elements))]
+      (aget elements n))))
+
+(defn on-fire []
+  (if (-> @state :balls (contains? @active-colour))
+    (blat! @active-colour)
+    (fire! @active-colour)))
+
+(defn register-ball-controls []
+  (get-mouse-event "fire!" on-fire)
+  (doseq [element (get-colour-elements)]
+    (let [colour (.-id element)]
+      (set! (.-style element) (str "background-color: " colour))
+      (get-mouse-event colour (fn [] (reset! active-colour colour))))))
 
 ;; Initialise the whole she-bang.
 
 (defn ^:export init []
   (register-for-key-events)
   (register-for-mouse-events)
+  (register-ball-controls)
   (restart)
   (run))

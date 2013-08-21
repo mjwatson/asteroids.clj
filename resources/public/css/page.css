@@ -43,3 +43,12 @@ div.button {
   font-size: 24px;
   text-align: center;
  }
+
+div.colourb {
+  height: 39px;;
+  width: 77px;
+  margin: 4.5px;
+  padding: 0em;
+  float: left;
+}
+
