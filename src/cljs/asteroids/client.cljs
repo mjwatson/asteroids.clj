@@ -214,11 +214,14 @@
 (defn on-keydown [e]
   (when-let [[x y] (key-mappings (.-keyCode e))]
     (.preventDefault e)
-    (shove x y @active-colour)
+    (if (.-ctrlKey e)
+      (shove-all! x y)
+      (shove x y @active-colour))
     false))
 
 (defn register-for-key-events []
   (.addEventListener js/window "keydown" on-keydown))
+
 
 ;; Top level control
 ;; Includes functions to start/stop/restart from the repl
