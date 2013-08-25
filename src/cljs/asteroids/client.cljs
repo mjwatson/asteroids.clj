@@ -28,23 +28,32 @@
 
 (def active-colour (atom default-foreground))
 
+(defn split-colours [colour]
+  (seq  (.split colour "-")))
+
 ;; The current state of the application
 ;; Stored in an atom for access via the repl
 
-(defn make-ball [colour]
- { :context    context 
-   :x          { :coord 0 :velocity 10 :max width  }
-   :y          { :coord 0 :velocity 0  :max height }
-   :d          40
-   :foreground colour })
+(defn make-animate [colours]
+  (into {} (map vec (partition 2 1 colours colours))))
 
-(defn make-state [colour]
+(defn make-ball [colour]
+  (let [colours (split-colours colour)]
+    { :context   context
+     :generation 0
+     :x          { :coord 0 :velocity 10 :max width  }
+     :y          { :coord 0 :velocity 0  :max height }
+     :d          40
+     :foreground (first colours)
+     :colours    (make-animate colours)}))
+
+(defn make-state []
   {:generation 0
    :opacity    1
-   :balls      { colour (make-ball colour) } })
+   :balls      {} })
 
 (defn initial-state []
-  (make-state default-foreground))
+  (make-state))
 
 
 ;; History parameters controlling how many previous posistions are displayed
@@ -114,8 +123,21 @@
 (defn age [state]
   (update-in state [:generation] inc))
 
+(def animation-speed 10)
+
+(defn animation-frame? [generation]
+  (= 0 (mod generation animation-speed)))
+
+
+(defn animate [state]
+  (if (and (animation-frame? (:generation state)) (:colours state))
+    (update-in state [:foreground] (state :colours))
+    state))
+
 (defn update-ball [ball]
   (-> ball
+      age
+      animate
       apply-gravity
       move-ball))
 
@@ -226,6 +248,7 @@
 (defn restart []
   (stop)
   (init-state)
+  (fire! @active-colour)
   (start))
 
 ;; Allow control of application from ui
@@ -265,8 +288,8 @@
 
 
 
-(defn get-colour-elements []
-  (let [elements (-> js/document (.querySelectorAll ".colourb"))]
+(defn get-colour-elements [selector]
+  (let [elements (-> js/document (.querySelectorAll selector))]
     (for [n (range (.-length elements))]
       (aget elements n))))
 
@@ -275,11 +298,26 @@
     (blat! @active-colour)
     (fire! @active-colour)))
 
+(defn party! []
+  (init-state)
+  (doseq [ [n element] (map vector  (range) (take 6 (get-colour-elements ".colour"))) ]
+    (let [colour (.-id element)]
+      (.setTimeout js/window
+                   (fn [] (fire! colour) (shove 0 (* -1 n 2) colour))
+                   (* n 2000)))))
+
+(defn make-style [colour]11
+  (let [colours (split-colours colour)]
+    (if (= 1 (count colours))
+      (str "background-color: " colour)
+      (str "background: linear-gradient(90deg, " (first colours) " 50%, " (second  colours) " 50%)"))))
+
 (defn register-ball-controls []
   (get-mouse-event "fire!" on-fire)
-  (doseq [element (get-colour-elements)]
+  (get-mouse-event "party!" party!)
+  (doseq [element (get-colour-elements ".colour")]
     (let [colour (.-id element)]
-      (set! (.-style element) (str "background-color: " colour))
+      (set! (.-style element) (make-style colour))
       (get-mouse-event colour (fn [] (reset! active-colour colour))))))
 
 ;; Initialise the whole she-bang.

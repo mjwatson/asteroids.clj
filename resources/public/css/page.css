@@ -15,7 +15,7 @@ canvas {
 
 div#control-group {
   width: 780px;
-  height: 45px;
+  height: 30px;
   margin-top: 1.5px;
   margin-left: 2em;
   margin-bottom: 1px;
@@ -28,24 +28,24 @@ div.controls {
   height: 30px;
   position: absolute;
   top: 50%;
-  margin-top: -30px;
+  margin-top: -20px;
   margin-left: 5px;
 }
 
 div.button {
-  height: 39px;;
+  height: 25px;;
   width: 250px;
   margin: 5px;
   padding: 0em;
   background-color: #8eba8e;
   float: left;
   font-family: "Goudy Old Style", Garamond, "Big Caslon", "Times New Roman", serif;
-  font-size: 24px;
+  font-size: 20px;
   text-align: center;
  }
 
-div.colourb {
-  height: 39px;;
+div.colour {
+  height: 25px;;
   width: 77px;
   margin: 4.5px;
   padding: 0em;
