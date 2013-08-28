@@ -309,18 +309,18 @@
                    (fn [] (fire! colour) (shove 0 (* -1 n 2) colour))
                    (* n 2000)))))
 
-(defn make-style [colour]11
+(defn set-style! [style colour]
   (let [colours (split-colours colour)]
     (if (= 1 (count colours))
-      (str "background-color: " colour)
-      (str "background: linear-gradient(90deg, " (first colours) " 50%, " (second  colours) " 50%)"))))
+      (set! (.-backgroundColor style) colour)
+      (set! (.-background style) (str "linear-gradient(90deg, " (first colours) " 50%, " (second  colours) " 50%)")))))
 
 (defn register-ball-controls []
   (get-mouse-event "fire!" on-fire)
   (get-mouse-event "party!" party!)
   (doseq [element (get-colour-elements ".colour")]
     (let [colour (.-id element)]
-      (set! (.-style element) (make-style colour))
+      (set-style! (.-style element) colour)
       (get-mouse-event colour (fn [] (reset! active-colour colour))))))
 
 ;; Initialise the whole she-bang.
