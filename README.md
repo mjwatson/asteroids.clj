@@ -1,9 +1,9 @@
-asteroids.clj
-=============
+bouncingballs.clj
+=================
 
 A simple clojurescript game.
 
-Currently just a bouncing ball in a screen...
+Lots of bouncing balls in a screen...
 
 See it here: http://clj-bouncingball.herokuapp.com/
 
